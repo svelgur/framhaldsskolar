@@ -3,8 +3,6 @@ import click
 import pandas as pd
 import numpy as np
 
-pd.set_option("display.max_columns", None)
-
 
 @click.command()
 @click.argument("skra_inn", type=click.Path(exists=True))
@@ -28,8 +26,6 @@ def hreinsa_skra(skra_inn, skra_ut, afmarkari, ar):
     df["heimaskoli"] = df.duplicated("Kennitala", keep="first").astype(int)
 
     # finnum út aldur út frá kt
-    # df["old"] = df[df["Kennitala"].astype(str)].str.endswith("0")
-
     df["old"] = np.where(
         df["Kennitala"].astype(str).str.endswith("0") == True, 2000, 1900
     )
