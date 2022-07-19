@@ -1,0 +1,33 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+              storage   display    value
+variable name   type    format     label      variable label
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+skóli           int     %8.0g                 Skóli
+auðkskóla       str7    %9s                   Auðk.skóla
+braut           str30   %30s                  Braut
+brautnotuð      str12   %12s                  Braut notuð
+brautheiti      str104  %104s                 Braut - heiti
+samrbraut       str6    %9s                   Samr.braut
+kennitala       double  %10.0g                Kennitala
+nafn            str51   %51s                  Nafn
+auðkundirsk     str11   %11s                  Auðk.undirsk.
+heitiundirsk    str21   %21s                  Heiti undirsk
+einlokið        str4    %9s                   Ein.lokið
+einlokiðþrep    str5    %9s                   Ein.lokið - þrep
+önn             str6    %9s                   Önn
+eináönn         byte    %8.0g                 Ein.á önn
+eináönnþrep     str4    %9s                   Ein.á önn - þrep
+áfáönn          byte    %8.0g                 Áf.á önn
+núverandistað~a str35   %35s                  Núverandi staða nema
+kyn             str3    %9s                   Kyn
+bekkur          str4    %9s                   Bekkur
+form            str1    %9s                   Form
+einlokiðánúvb~t str4    %9s                   Ein.lokið á núv.braut
+einlokiðánúvb~p str5    %9s                   Ein.lokið á núv.braut - þrep
+póstnrlögh      int     %8.0g                 Póstnr.lögh
+fjöldianna      byte    %8.0g                 Fjöldi anna
+farsími         str14   %14s                  Farsími
+netfang         str89   %89s                  Netfang
+aldur           int     %8.0g                 Aldur
+v28             byte    %8.0g                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
