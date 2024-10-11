@@ -53,4 +53,5 @@ ax.set_ylabel('Percentage Growth')
 ax.grid(True)
 
 plt.tight_layout()
+plt.savefig('normalized_student_immigrant_growth.pdf')
 plt.show()
