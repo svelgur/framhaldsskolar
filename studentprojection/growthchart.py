@@ -116,7 +116,7 @@ df[0] = 100
 df.drop([1,2,3,4,5,6,7,8,9],axis = 1, inplace = True)
 
 cols = list(range(10))
-df.set_axis(cols, axis=1,inplace=True)
+df = df.set_axis(cols, axis=1)
 df = df.round()
 
 # Define a standard year range from 0 to 10 (representing the progression from "1. bekkur" to "10. bekkur")
