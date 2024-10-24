@@ -1,55 +1,142 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import requests
+import json
 
-# Data for each "bekkur" with the corresponding years where percentages are provided
-data = {
-    'Year': [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023],
-    'bekkur1': [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
-    'bekkur2': [None, 125, 111, 103, 100, 102, 94, 107, 112, 120, 142, 121, 113, 116, 110, 138, 129],
-    'bekkur3': [None, None, 133, 108, 103, 105, 112, 107, 114, 132, 143, 162, 137, 130, 128, 156, 184],
-    'bekkur4': [None, None, None, 125, 110, 107, 109, 120, 118, 131, 156, 168, 187, 152, 151, 161, 202],
-    'bekkur5': [None, None, None, None, 125, 115, 115, 113, 125, 137, 151, 180, 200, 199, 169, 211, 220],
-    'bekkur6': [None, None, None, None, None, 134, 122, 123, 126, 133, 164, 184, 211, 236, 227, 208, 289],
-    'bekkur7': [None, None, None, None, None, None, 143, 139, 135, 136, 151, 188, 201, 224, 259, 292, 267],
-    'bekkur8': [None, None, None, None, None, None, None, 149, 152, 149, 149, 168, 200, 220, 263, 313, 351],
-    'bekkur9': [None, None, None, None, None, None, None, None, 157, 181, 172, 165, 187, 209, 239, 318, 393],
-    'bekkur10': [None, None, None, None, None, None, None, None, None, 178, 196, 186, 183, 194, 228, 290, 412]
+# importing data trhough statice API
+url = "https://px.hagstofa.is:443/pxis/api/v1/is/Samfelag/skolamal/2_grunnskolastig/0_gsNemendur/SKO02108b.px"
+query_params = {
+  "query": [
+    {
+      "code": "Bakgrunnur",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "124"
+        ]
+      }
+    },
+    {
+      "code": "Kyn",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "0"
+        ]
+      }
+    },
+    {
+      "code": "Bekkur",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "Grade 1",
+          "Grade 2",
+          "Grade 3",
+          "Grade 4",
+          "Grade 5",
+          "Grade 6",
+          "Grade 7",
+          "Grade 8",
+          "Grade 9",
+          "Grade 10"
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json"
+  }
 }
 
-# Convert data into a DataFrame
-df = pd.DataFrame(data)
+session = requests.Session()
+response = session.post(url, json=query_params)
+response_json = json.loads(response.content.decode('utf-8-sig'))
+
+# Create df from json
+
+# Prepare lists to hold years, grades and values
+years = []
+grades = []
+values = []
+
+# Extract years, grades and values from the data
+for record in response_json['data']:
+    year = record['key'][0] # The first element in the key array is the year
+    grade = record['key'][3] # The third element in the key array is the grade
+    value = record['values'][0]  # The first element in the values array is the value
+    
+    years.append(year)
+    grades.append(grade)
+    values.append(value)
+    
+df = pd.DataFrame({
+    'artal': years,
+    'bekkur': grades, 
+    'fjoldi': values
+})
+
+df['fjoldi'] = pd.to_numeric(df['fjoldi'])
+df['artal'] = pd.to_numeric(df['artal'])
+
+# Setting up a pivot table
+pivot_df = df.pivot(index='artal', columns='bekkur', values='fjoldi')
+# Rename the grades column so "Grade 1" becomes "1. bekkur"
+pivot_df.columns = [f"{int(grade.split()[1])}. bekkur" for grade in pivot_df.columns]
+# Reorder columns numerically
+new_order = sorted(pivot_df.columns, key=lambda x: int(x.split('.')[0]))
+pivot_df = pivot_df[new_order]
+
+# Create new df that tracks the changes of students for each grade through the 10 years of schooling
+bekkjarlisti = [col for col in pivot_df.columns if 'bekkur' in col]
+throun_arganga_grunnskoli = {}
+
+for year in pivot_df.index:
+    key = year
+    tmp_list = []
+    for bekkur in bekkjarlisti:
+        if year < 2024:
+            tmp_list.append(pivot_df.at[year, bekkur])
+        else:
+            tmp_list.append('Nan')
+        year = year+1
+    throun_arganga_grunnskoli[key] = tmp_list
+
+df = pd.DataFrame.from_dict(throun_arganga_grunnskoli, orient="index")
+
+# Normalizing dataframe
+for column in df.columns:
+    if column == df.shape[1] - 1:
+        break
+    elif column == 0:
+        continue
+    else:
+        df[column+10] = df.apply(lambda s: (((s[column] - s[0])/s[0])*100)+100 if s[column] != 'Nan' else 0, axis=1)
+df[0] = 100
+df.drop([1,2,3,4,5,6,7,8,9],axis = 1, inplace = True)
+
+cols = list(range(10))
+df.set_axis(cols, axis=1,inplace=True)
+df = df.round()
 
 # Define a standard year range from 0 to 10 (representing the progression from "1. bekkur" to "10. bekkur")
 standard_years = list(range(11))
-
 # Initialize figure and axes for the plot
 fig, ax = plt.subplots(figsize=(14, 8))
 
 # Each line will be a trajectory starting from a different year
-for start_year in range(2007, 2018):  # Data starts in 2007 and the last trajectory that can fully form starts in 2017
-    values = []  # To hold the percentage values
-    valid_years = []  # To hold the actual years where data is available
+for start_year in df.index:  # Loops through all years in dataframe
+    values = list(filter(lambda x: x > 0, list(df[df > 0].loc[start_year])))  # Holds all values > 0
 
-    # Extract the values for each bekkur, shifting appropriately
-    for offset in range(10):
-        target_year = start_year + offset
-        if target_year <= 2023:
-            bekkur_label = f'bekkur{offset+1}'
-            value = df.loc[df['Year'] == target_year, bekkur_label].values[0]
-            if pd.notna(value):
-                values.append(value)
-                valid_years.append(target_year)
-
-    # Plot each trajectory if data exists
-    if values:
+    if len(values) > 5: #plot values if we have a sufficient no years
         ax.plot(standard_years[:len(values)], values, marker='o', label=f'Start: {start_year}')
         # Add labels at the end of each curve
-        ax.text(standard_years[len(values)-1], values[-1], f'Start: {start_year}', fontsize=9, 
+        ax.text(standard_years[len(values)-1], values[-1], f'Upphafsár: {start_year}', fontsize=9, 
                 verticalalignment='center', horizontalalignment='left')
-
-ax.set_title('Normalized Yearly Growth for Each "1. Bekkur" Starting Year')
-ax.set_xlabel('Years Since Start')
-ax.set_ylabel('Percentage Growth')
+        
+ax.set_title('Staðlaður árlegur vöxtur fyrir upphafsár hvers 1. bekkjar')
+ax.set_xlabel('Ár frá upphafi skólagöngu')
+ax.set_ylabel('Hlutfallslegur vöxtur')
 ax.grid(True)
 
 plt.tight_layout()
